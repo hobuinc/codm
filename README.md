@@ -60,16 +60,16 @@ variables stick:
 
 1. print the environment variables for your AWS region. The variable you are interested in is the GPU AMI ID
 
-    ./print-variables.sh
+        ./print-variables.sh
 
 
-2. Execute the Serverless deployment, getting the GPU AMI from the ``./print-variables.sh`` call.
+2. Execute the Serverless deployment, getting the GPU AMI from the ``./print-variables.sh`` call and use a service name (in our case it is ``codm``)
 
-    sls deploy --service codm --stage dev --ami "ami-0752de6b19d3111d7
+        sls deploy --service codm --stage dev --ami "ami-0752de6b19d3111d7
 
-3. Push the Docker image
+3. Push the Docker image with the service name
 
-    ./deploy-docker.sh codm2
+        ./deploy-docker.sh codm
 
 ## Usage
 
