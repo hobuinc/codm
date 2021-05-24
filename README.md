@@ -71,6 +71,23 @@ variables stick:
 
         ./deploy-docker.sh codm
 
+
+
+## Removal
+
+1. The bucket must be empty before it can be removed. For the service described in Deployment,
+   the bucket name would be ``s3://codm-dev-codm``
+
+        aws s3 rm --recursive s3://codm-dev-codm
+
+2. Clean up the ECR repository
+
+        ./cleanup-docker codm
+
+3. Remove the deployment
+
+        sls remove --service codm --stage dev
+
 ## Usage
 
 1. User copies data to ``s3://bucket/prefix/*.jpg``
