@@ -1,0 +1,289 @@
+service:  ${opt:service, 'codm'}
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  stackName: '${self:service}'
+  runtime: 'python3.8'
+  region: ${opt:region, 'us-west-2'}
+  tags:
+    name: '${self:service}'
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:GetBucketTagging"
+        - "s3:PutObjectTagging"
+        - "s3:GetObject"
+        - "s3:PutObject"
+        - "s3:ListBucket"
+        - "s3:DeleteObject"
+        - "batch:SubmitJob"
+        - "lambda:ListTags"
+        - "batch:List*"
+        - "batch:Describe*"
+        - "batch:CancelJob"
+        - "batch:TerminateJob"
+        - "sns:Publish"
+        - "ses:SendEmail"
+        - "ses:SendRawEmail"
+        - "sqs:SendMessage"
+        - "sqs:ReceiveMessage"
+        - "sqs:GetQueueAttributes"
+        - "sqs:ListQueues"
+        - "sqs:SendMessageBatch"
+        - "sqs:GetQueueUrl"
+        - "sqs:ListQueueTags"
+        - "sqs:DeleteMessage"
+        - "sns:ListSubscriptionsByTopic"
+        - "sns:Subscribe"
+        - "sns:Publish"
+        - "sns:GetTopicAttributes"
+        - "sns:SetSubscriptionAttributes"
+        - "sns:GetSubscriptionAttributes"
+
+      Resource: "*"
+
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  accountId: ${file(./getAccountId.js):getAccountId}
+  ami: ${opt:ami, 'ami-0752de6b19d3111d7'}
+  timeout: ${opt:timeout, '86400'}
+
+  pythonRequirements:
+    dockerizePip: true
+
+functions:
+
+  dispatch:
+    handler:
+      'lambda.handlers.dispatch'
+    description:
+      'Dispatches CODM jobs when process file is copied to prefix'
+    runtime:
+      'python3.8'
+    tags:
+        Name: '${self:service}:lambda.${self:provider.stage}.dispatch'
+    maximumRetryAttempts: 0
+
+  cancel:
+    handler:
+      'lambda.handlers.cancel'
+    description:
+      'Cancel CODM jobs when cancel file is copied to prefix'
+    runtime:
+      'python3.8'
+    tags:
+        Name: '${self:service}:lambda.${self:provider.stage}.cancel'
+    maximumRetryAttempts: 0
+
+
+resources:
+  Resources:
+
+    JobDefinition:
+      Type: AWS::Batch::JobDefinition
+      Properties:
+        Type: 'container'
+        JobDefinitionName: '${self:service}-${self:provider.stage}-job'
+        Timeout:
+          AttemptDurationSeconds: '${self:custom.timeout}'
+        ContainerProperties:
+          MountPoints:
+            - ContainerPath: "/local"
+              ReadOnly: false
+              SourceVolume: "local"
+          Volumes:
+            - Name: 'local'
+              Host:
+                SourcePath: "/local"
+          Command:
+            - 'sh'
+            - '-c'
+            - '/entry.sh'
+            - "Ref::bucketname"
+            - "Ref::collectname"
+            - "Ref::outputname"
+          Memory: 32000
+          Privileged: true
+          Vcpus: 16
+          Image: '${self:custom.accountId}.dkr.ecr.${self:provider.region}.amazonaws.com/${self:service}-${self:provider.stage}-codm:latest'
+          LogConfiguration:
+            LogDriver: 'awslogs'
+            Options:
+              "awslogs-group": "${self:service}-${self:provider.stage}-codm-batch"
+        Tags:
+          'Name' : '${self:service}:batch.${self:provider.stage}.jobdefinition'
+
+    CODMBatchLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: "${self:service}-${self:provider.stage}-codm-batch"
+        RetentionInDays: 30
+
+    CODMLaunchTemplate:
+      Type: AWS::EC2::LaunchTemplate
+      Properties:
+        LaunchTemplateName: '${self:service}-${self:provider.stage}-launchtemplate'
+        LaunchTemplateData:
+          UserData: ${file(./getUserData.js):getUserData}
+
+        TagSpecifications:
+          -
+            ResourceType: 'launch-template'
+            Tags:
+            - Key: 'Name'
+              Value: '${self:service}:${self:service}-${self:provider.stage}-ec2.launchtemplate'
+
+    ComputeEnvironment:
+      Type: AWS::Batch::ComputeEnvironment
+      DependsOn:
+        -  CODMLaunchTemplate
+      Properties:
+        ComputeEnvironmentName: '${self:service}-${self:provider.stage}-computenvironment'
+        Type: MANAGED
+        ServiceRole: arn:aws:iam::${self:custom.accountId}:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch
+        ComputeResources:
+          MaxvCpus: 128
+          SecurityGroupIds:
+            - sg-9c818edd
+            - sg-01edd2bdc2b845c9a
+          Type: SPOT
+          SpotIamFleetRole: arn:aws:iam::${self:custom.accountId}:role/aws-ec2-spot-fleet-tagging-role
+          Subnets:
+            - subnet-4174490a
+            - subnet-4609193f
+            - subnet-2c13f071
+            - subnet-eec359c5
+          BidPercentage: 100
+          MinvCpus: 0
+          InstanceRole: ecsInstanceRole
+          ImageId: '${self:custom.ami}'
+          InstanceTypes:
+            - g4dn.8xlarge
+          Tags:
+            'Name': '${self:service}:batch.${self:provider.stage}.computeenvironment'
+          DesiredvCpus: 0
+          LaunchTemplate:
+            LaunchTemplateId: !Ref CODMLaunchTemplate
+          Ec2Configuration:
+            - ImageType: 'ECS_AL2_NVIDIA'
+
+        State: ENABLED
+        Tags:
+          'Name': '${self:service}:batch.${self:provider.stage}.computeenvironment'
+
+    JobQueue:
+      Type: AWS::Batch::JobQueue
+      Properties:
+        JobQueueName: '${self:service}-${self:provider.stage}-jobqueue'
+        ComputeEnvironmentOrder:
+          - Order: 1
+            ComputeEnvironment: !Ref ComputeEnvironment
+        State: ENABLED
+        Priority: 1
+        Tags:
+          'Name': '${self:service}:sqs.${self:provider.stage}.jobqueue'
+
+    CODMNotificationTopic:
+        Type: AWS::SNS::Topic
+        Properties:
+          DisplayName: 'Cloud ODM Processing'
+          TopicName: '${self:service}-${self:provider.stage}-notifications'
+          Tags:
+            - Key: 'Name'
+              Value: '${self:service}:sns.${self:provider.stage}.notifications'
+
+                #    CODMRepository:
+                #      Type: AWS::ECR::Repository
+                #      Properties:
+                #        RepositoryName: "${self:service}-${self:provider.stage}-codm"
+                #        Tags:
+                #          -
+                #            Key: 'Name'
+                #            Value: '${self:service}:ecr.${self:provider.stage}'
+
+    DispatchLambdaPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName:
+          'Fn::GetAtt':
+                  - DispatchLambdaFunction
+                  - Arn
+        Action: 'lambda:InvokeFunction'
+        Principal: 's3.amazonaws.com'
+        SourceArn: "arn:aws:s3:::${self:service}-${self:provider.stage}-codm"
+
+    CancelLambdaPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName:
+          'Fn::GetAtt':
+                  - CancelLambdaFunction
+                  - Arn
+        Action: 'lambda:InvokeFunction'
+        Principal: 's3.amazonaws.com'
+        SourceArn: "arn:aws:s3:::${self:service}-${self:provider.stage}-codm"
+
+
+    CODMBucket:
+      Type: AWS::S3::Bucket
+      DependsOn:
+        -  CancelLambdaFunction
+        -  DispatchLambdaFunction
+
+      Properties:
+        BucketName: "${self:service}-${self:provider.stage}-codm"
+        Tags:
+          -
+            Key: 'Name'
+            Value: '${self:service}:s3.${self:provider.stage}'
+        NotificationConfiguration:
+          LambdaConfigurations:
+            - Event: 's3:ObjectCreated:*'
+              Filter:
+                S3Key:
+                  Rules:
+                    - Name: 'suffix'
+                      Value: 'cancel'
+              Function:
+                'Fn::GetAtt':
+                  - CancelLambdaFunction
+                  - Arn
+
+            - Event: 's3:ObjectCreated:*'
+              Filter:
+                S3Key:
+                  Rules:
+                    - Name: 'suffix'
+                      Value: 'process'
+              Function:
+                'Fn::GetAtt':
+                  - DispatchLambdaFunction
+                  - Arn
+
+    LambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+            - sts:AssumeRole
+        Path: '/'
+        Policies:
+        - PolicyName: s3
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - s3:Get*
+              Resource:
+                - 'arn:aws:s3:::${self:service}-${self:provider.stage}-codm'
+                - 'arn:aws:s3:::${self:service}-${self:provider.stage}-codm/*'
+

@@ -1,0 +1,12 @@
+pc_las: True
+dsm: True
+dtm: True
+pc_ept: True
+max_concurrency: 16
+verbose: True
+time: True
+dem-resolution: 0.25
+feature_type: hahog
+feature_quality: medium
+opensfm_processes: 8
+pc_tile: True
