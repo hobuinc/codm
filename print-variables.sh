@@ -13,7 +13,18 @@ fi
 
 AWS_AMI=$(aws ssm get-parameter --name /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended --region $AWS_DEFAULT_REGION --output json |jq -r .Parameter.Value|jq -r .image_id)
 
+rm -rf ami.yaml
+echo "$AWS_AMI" >> ami.yaml
 echo "CODM GPU AMI: $AWS_AMI"
 
 export AWS_IDENTITY=$(aws sts get-caller-identity --query 'Account' --output text)
 echo "AWS Identity: $AWS_IDENTITY"
+
+SUBNETS=$(aws ec2 describe-subnets|jq -r '.Subnets[].SubnetId')
+
+rm -rf subnets.yaml
+for SUBNET in $SUBNETS
+do
+
+    echo "- $SUBNET" >> subnets.yaml
+done

@@ -49,7 +49,6 @@ plugins:
 
 custom:
   accountId: ${file(./getAccountId.js):getAccountId}
-  ami: ${opt:ami, 'ami-0752de6b19d3111d7'}
   timeout: ${opt:timeout, '86400'}
 
   pythonRequirements:
@@ -109,6 +108,9 @@ resources:
           Memory: 32000
           Privileged: true
           Vcpus: 16
+          ResourceRequirements:
+            - Type: "GPU"
+              Value: "1"
           Image: '${self:custom.accountId}.dkr.ecr.${self:provider.region}.amazonaws.com/${self:service}-${self:provider.stage}-codm:latest'
           LogConfiguration:
             LogDriver: 'awslogs'
@@ -147,22 +149,14 @@ resources:
         ServiceRole: arn:aws:iam::${self:custom.accountId}:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch
         ComputeResources:
           MaxvCpus: 128
-          SecurityGroupIds:
-            - sg-9c818edd
-            - sg-01edd2bdc2b845c9a
           Type: SPOT
           SpotIamFleetRole: arn:aws:iam::${self:custom.accountId}:role/aws-ec2-spot-fleet-tagging-role
-          Subnets:
-            - subnet-4174490a
-            - subnet-4609193f
-            - subnet-2c13f071
-            - subnet-eec359c5
+          Subnets: ${file(./subnets.yaml)}
           BidPercentage: 100
           MinvCpus: 0
           InstanceRole: ecsInstanceRole
-          ImageId: '${self:custom.ami}'
-          InstanceTypes:
-            - g4dn.8xlarge
+          ImageId: ${file(./ami.yaml)}
+          InstanceTypes: ${file(./instances.yaml)}
           Tags:
             'Name': '${self:service}:batch.${self:provider.stage}.computeenvironment'
           DesiredvCpus: 0

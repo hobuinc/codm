@@ -58,14 +58,14 @@ variables stick:
 
 ## Deployment
 
-1. print the environment variables for your AWS region. The variable you are interested in is the GPU AMI ID
+1. print the environment variables for your AWS region. This will gather the subnets and the GPU AMI ID in ``subnets.yaml`` and ``ami.yaml``
 
         ./print-variables.sh
 
 
 2. Execute the Serverless deployment, getting the GPU AMI from the ``./print-variables.sh`` call and use a service name (in our case it is ``codm``)
 
-        sls deploy --service codm --stage dev --ami "ami-0752de6b19d3111d7
+        sls deploy --service codm --stage dev
 
 3. Push the Docker image with the service name
 
@@ -118,5 +118,10 @@ If your imagery doesn't have embedded geospatial information, you might need to
 copy a ``geo.txt`` that maps the coordinates for each image to
 ``s3://bucket//prefix/geo.txt``. This is likely going to be needed for big
 collections, which otherwise might not match or converge.
+
+
+## Resources
+
+Azavea has excellent CF templates for GPU Batch at https://github.com/azavea/raster-vision-aws/blob/master/cloudformation/template.yml
 
 
