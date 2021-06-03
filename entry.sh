@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 echo "Hello , this is CODM docker!"
 
 BUCKET="$4"
@@ -16,10 +17,11 @@ ln -s /local/images /code/images
 aws s3 cp s3://$BUCKET/settings.yaml .
 
 # try using an overriden settings file
-aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .
+aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .  || exit 0
 aws s3 sync s3://$BUCKET/$COLLECT/ /local/images --no-progress
 
-python3 /code/run.py --project-path .. 2>&1 > odm_$COLLECT-process.log
+#python3 /code/run.py --rerun-all --project-path ..
+python3 /code/run.py --rerun-all --project-path .. 2>&1 > odm_$COLLECT-process.log
 
 ls -al
 
@@ -34,7 +36,7 @@ done
 aws s3 cp odm_$COLLECT-process.log s3://$BUCKET/$COLLECT/$OUTPUT/odm_$COLLECT-process.log
 
 # try to copy the EPT data (it isn't named odm_*)
-aws s3 sync entwine_pointcloud s3://$BUCKET/$COLLECT/$OUTPUT/entwine_pointcloud --no-progress
+aws s3 sync entwine_pointcloud s3://$BUCKET/$COLLECT/$OUTPUT/entwine_pointcloud --no-progress  || exit 0
 
 
 

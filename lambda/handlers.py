@@ -2,6 +2,7 @@
 import json
 import os
 from s3path import S3Path
+import requests
 
 import boto3
 client = boto3.client('s3') # example client, could be any
@@ -89,13 +90,78 @@ def get_job_info(context):
     stage = tags['Tags']['STAGE']
     stack = tags['Tags']['name']
 
+    try:
+        slack = tags['Tags']['slackhook']
+    except KeyError:
+        slack = None
+
     output = {}
     output['queue'] = f'{stack}-{stage}-jobqueue'
     output['definition'] = f'{stack}-{stage}-job'
+    output['sns'] = f'{stack}-{stage}-notifications'
+    output['stage'] = f'{stage}'
+    output['stack'] = f'{stack}'
+    output['slack'] = slack
 
     return output
 
 
+def notify_slack(slack_url, event, context):
+    info = get_job_info(context)
+    logger.debug(f'notify_slack for job {info}')
+
+
+    logger.debug(f'notifying slack for context {context}')
+    logger.debug(f'notifying slack for context {event}')
+    message = event
+    status = message['detail']['status']
+    bucket = message['detail']['parameters']['bucketname']
+    collect = message['detail']['parameters']['collectname']
+    prefix = f's3://{bucket}/{collect}/'
+
+    if status == 'FAILED':
+        color = 'danger'
+    else:
+        color = 'good'
+
+    text = f"""CODM Processing Task for {collect} \n
+```{prefix}```"""
+
+    fallback_message = text
+    pretext = text
+    template ={
+        "fallback": f"{fallback_message}",
+        "pretext": f"{pretext}",
+        "color": f"{color}",
+
+        "fields": [
+            {
+                "title": "Status",
+                "value": f"{status}"
+            }
+        ]
+    }
+
+    r = requests.post(slack_url, json=template)
+    logger.debug(f'notify_slack hook post {r.status_code}')
+
+
+
+
+
+
+def notify(event, context):
+
+    info = get_job_info(context)
+    logger.debug(f'notifying for job {info}')
+
+    # Notify Slack
+    # Check if we have a slack-hook tag on our lambda
+    slack_url = info['slack']
+    if slack_url:
+        notify_slack(slack_url, event, context)
+
+    # Notify Email
 
 
 def dispatch(event, context):

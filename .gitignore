@@ -1,3 +1,5 @@
 node_modules/*
 subnets.yaml
 ami.yaml
+security-groups.yaml
+slack-url.txt

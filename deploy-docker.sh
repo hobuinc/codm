@@ -15,7 +15,7 @@ AWS_AMI=$(aws ssm get-parameter --name /aws/service/ecs/optimized-ami/amazon-lin
 export AWS_IDENTITY=$(aws sts get-caller-identity --query 'Account' --output text)
 echo "AWS Identity: $AWS_IDENTITY"
 
-STAGE=$( aws cloudformation describe-stacks --stack-name codm2|jq -r '.Stacks[] | select (.StackName == "'$STACK_NAME'").Tags[] | select (.Key == "STAGE").Value' )
+STAGE=$( aws cloudformation describe-stacks --stack-name $STACK_NAME |jq -r '.Stacks[] | select (.StackName == "'$STACK_NAME'").Tags[] | select (.Key == "STAGE").Value' )
 STACK_ID=$( aws cloudformation list-stacks --stack-status-filter UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE  |jq '.StackSummaries[] | select(.StackName == "'$STACK_NAME'").StackId' -r)
 
 

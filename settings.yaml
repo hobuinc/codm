@@ -7,6 +7,11 @@ verbose: True
 time: True
 dem-resolution: 0.25
 feature_type: hahog
-feature_quality: medium
+feature_quality: high
+matcher_neighbors: 14
+min_num_features: 16000
 opensfm_processes: 8
 pc_tile: True
+notifications:
+  - 'howard@hobu.co'
+

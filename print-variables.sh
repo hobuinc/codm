@@ -28,3 +28,11 @@ do
 
     echo "- $SUBNET" >> subnets.yaml
 done
+
+rm -rf security-groups.yaml
+SECURITY_GROUPS=$(aws ec2 describe-security-groups --group-names 'default'|jq -r '.SecurityGroups[0].GroupId')
+for SECURITY_GROUP in $SECURITY_GROUPS
+do
+
+    echo "- $SECURITY_GROUP" >> security-groups.yaml
+done

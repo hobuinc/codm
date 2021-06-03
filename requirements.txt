@@ -1,2 +1,4 @@
 s3path
 boto3
+pyyaml
+requests

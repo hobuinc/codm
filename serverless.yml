@@ -78,6 +78,17 @@ functions:
         Name: '${self:service}:lambda.${self:provider.stage}.cancel'
     maximumRetryAttempts: 0
 
+  notify:
+    handler:
+      'lambda.handlers.notify'
+    description:
+      'Respond to notifications '
+    runtime:
+      'python3.8'
+    tags:
+        Name: '${self:service}:lambda.${self:provider.stage}.notify'
+    maximumRetryAttempts: 0
+
 
 resources:
   Resources:
@@ -119,6 +130,8 @@ resources:
         Tags:
           'Name' : '${self:service}:batch.${self:provider.stage}.jobdefinition'
 
+
+
     CODMBatchLogGroup:
       Type: AWS::Logs::LogGroup
       Properties:
@@ -149,6 +162,8 @@ resources:
         ServiceRole: arn:aws:iam::${self:custom.accountId}:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch
         ComputeResources:
           MaxvCpus: 128
+          SecurityGroupIds:  ${file(./security-groups.yaml)}
+
           Type: SPOT
           SpotIamFleetRole: arn:aws:iam::${self:custom.accountId}:role/aws-ec2-spot-fleet-tagging-role
           Subnets: ${file(./subnets.yaml)}
@@ -190,14 +205,56 @@ resources:
             - Key: 'Name'
               Value: '${self:service}:sns.${self:provider.stage}.notifications'
 
-                #    CODMRepository:
-                #      Type: AWS::ECR::Repository
-                #      Properties:
-                #        RepositoryName: "${self:service}-${self:provider.stage}-codm"
-                #        Tags:
-                #          -
-                #            Key: 'Name'
-                #            Value: '${self:service}:ecr.${self:provider.stage}'
+
+    CODMFailedEventsRule:
+      Type: 'AWS::Events::Rule'
+      Properties:
+        Description: 'Capture FAILED batch jobs'
+        Name: "${self:service}-${self:provider.stage}-codm-failed-watch"
+        EventPattern:
+          source:
+            - aws.batch
+          detail-type:
+            - "Batch Job State Change"
+          detail:
+            status:
+              - "FAILED"
+              - "STARTING"
+              - "SUBMITTED"
+              - "SUCCEEDED"
+        State: ENABLED
+        Targets:
+
+          - Arn:
+              'Fn::GetAtt':
+                - NotifyLambdaFunction
+                - Arn
+
+            Id: 'BatchTopic'
+
+    PermissionForEventsToInvokeLambda:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !Ref NotifyLambdaFunction
+        Action: "lambda:InvokeFunction"
+        Principal: "events.amazonaws.com"
+        SourceArn:
+          'Fn::GetAtt':
+                - CODMFailedEventsRule
+                - Arn
+
+    CODMEventTopicPolicy:
+      Type: 'AWS::SNS::TopicPolicy'
+      Properties:
+        PolicyDocument:
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: 'sns:Publish'
+              Resource: '*'
+        Topics:
+          - !Ref CODMNotificationTopic
 
     DispatchLambdaPermission:
       Type: AWS::Lambda::Permission

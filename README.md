@@ -71,6 +71,15 @@ variables stick:
 
         ./deploy-docker.sh codm
 
+### Slack notifications
+
+Create a Slack Incoming Webhook and store the URL in ``slack-url.txt``. Then
+issue the script to place that webhook as a tag on the `codm-dev-notify` Lambda
+function:
+
+        ./activate-slack-hook.sh codm
+
+
 
 
 ## Removal
