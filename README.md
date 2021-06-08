@@ -73,14 +73,20 @@ variables stick:
 
 ### Slack notifications
 
-Create a Slack Incoming Webhook and store the URL in ``slack-url.txt``. Then
-issue the script to place that webhook as a tag on the `codm-dev-notify` Lambda
-function:
+Create a Slack Incoming Webhook and store the URL in ``config.json`` under the ``slackhook`` key.
 
-        ./activate-slack-hook.sh codm
+### Email notifications
 
+Store the ``sesdomain`` and ``sesregion`` key/value pairs in ``config.json``
 
+    {"sesregion":"us-east-1",
+     "sesdomain":"rsgiscx.net"}
 
+Add a ``notifications`` list to the ``settings.yaml`` that is used by the collection
+
+    notifications:
+      - 'howard@hobu.co'
+      - 'hobu.inc+codm@gmail.com'
 
 ## Removal
 

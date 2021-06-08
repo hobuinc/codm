@@ -87,6 +87,9 @@ functions:
       'python3.8'
     tags:
         Name: '${self:service}:lambda.${self:provider.stage}.notify'
+        slackhook: ${file(./config.json):slackhook}
+        sesregion: ${file(./config.json):region}
+        sesdomain: ${file(./config.json):domain}
     maximumRetryAttempts: 0
 
 
@@ -217,6 +220,9 @@ resources:
           detail-type:
             - "Batch Job State Change"
           detail:
+            parameters:
+              bucketname:
+                - '${self:service}-${self:provider.stage}-codm'
             status:
               - "FAILED"
               - "STARTING"

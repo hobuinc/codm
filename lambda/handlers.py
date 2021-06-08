@@ -3,8 +3,11 @@ import json
 import os
 from s3path import S3Path
 import requests
+import yaml
 
 import boto3
+from botocore.exceptions import ClientError
+
 client = boto3.client('s3') # example client, could be any
 REGION = client.meta.region_name
 
@@ -95,6 +98,17 @@ def get_job_info(context):
     except KeyError:
         slack = None
 
+    try:
+        sesdomain = tags['Tags']['sesdomain']
+    except KeyError:
+        sesdomain = None
+
+    try:
+        sesregion = tags['Tags']['sesregion']
+    except KeyError:
+        sesregion = None
+
+
     output = {}
     output['queue'] = f'{stack}-{stage}-jobqueue'
     output['definition'] = f'{stack}-{stage}-job'
@@ -102,6 +116,8 @@ def get_job_info(context):
     output['stage'] = f'{stage}'
     output['stack'] = f'{stack}'
     output['slack'] = slack
+    output['sesregion'] = sesregion
+    output['sesdomain'] = sesdomain
 
     return output
 
@@ -124,7 +140,7 @@ def notify_slack(slack_url, event, context):
     else:
         color = 'good'
 
-    text = f"""CODM Processing Task for {collect} \n
+    text = f"""CODM Processing Task Status for {collect} \n
 ```{prefix}```"""
 
     fallback_message = text
@@ -146,6 +162,84 @@ def notify_slack(slack_url, event, context):
     logger.debug(f'notify_slack hook post {r.status_code}')
 
 
+def notify_email(addresses, event, context):
+
+    message = event
+    status = message['detail']['status']
+    bucket = message['detail']['parameters']['bucketname']
+    collect = message['detail']['parameters']['collectname']
+    prefix = f's3://{bucket}/{collect}/'
+
+    if status == 'FAILED':
+        color = 'danger'
+    else:
+        color = 'good'
+
+    SUBJECT = f"""CODM Processing Task Status for {prefix}"""
+
+    stack = event['info']['stack']
+    domain = event['info']['sesdomain']
+    SENDER = f"CODM Processing Task <{stack}@{domain}>"
+    SES_REGION = event['info']['sesregion']
+
+
+    # The email body for recipients with non-HTML email clients.
+    BODY_TEXT = (f"CODM Processing Status – {status}\r\n"
+                 f"Processing for {prefix}\r\nConsole - https://s3.console.aws.amazon.com/s3/buckets/{bucket}?region={REGION}&prefix={collect}/&showversions=false"
+                )
+
+    # The HTML body of the email.
+    BODY_HTML = f"""<html>
+    <head></head>
+    <body>
+      <h1>CODM Processing Status – {status} </h1>
+      <pre>{prefix}</pre>
+      <p>
+          <a href="https://s3.console.aws.amazon.com/s3/buckets/{bucket}?region={REGION}&prefix={collect}/&showversions=false">Console View</a>
+      </p>
+    </body>
+    </html>
+                """
+
+    # The character encoding for the email.
+    CHARSET = "UTF-8"
+
+    # Create a new SES resource and specify a region.
+    client = boto3.client('ses',region_name=SES_REGION)
+    logger.debug(f'Sending email to {addresses} {type(addresses)}')
+
+    # Try to send the email.
+    try:
+        #Provide the contents of the email.
+        response = client.send_email(
+            Destination={
+                'ToAddresses': addresses,
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': BODY_HTML,
+                    },
+                    'Text': {
+                        'Charset': CHARSET,
+                        'Data': BODY_TEXT,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': SUBJECT,
+                },
+            },
+            Source=SENDER,
+        )
+    # Display an error if something goes wrong.
+    except ClientError as e:
+
+        logger.debug(e.response['Error']['Message'])
+    else:
+        logger.debug("Email sent! Message ID:"),
+        logger.debug(response['MessageId'])
 
 
 
@@ -153,6 +247,7 @@ def notify_slack(slack_url, event, context):
 def notify(event, context):
 
     info = get_job_info(context)
+    event['info'] = info # keep this around for our event
     logger.debug(f'notifying for job {info}')
 
     # Notify Slack
@@ -161,7 +256,30 @@ def notify(event, context):
     if slack_url:
         notify_slack(slack_url, event, context)
 
-    # Notify Email
+    message = event
+    bucket = message['detail']['parameters']['bucketname']
+    collect = message['detail']['parameters']['collectname']
+    output = message['detail']['parameters']['outputname']
+
+    collect = collect.lstrip('/')
+    uri = os.path.join('s3://', bucket, collect, 'settings.yaml')
+    settings = S3Path.from_uri(uri)
+
+    logger.debug(f'checking prefix for job {settings}')
+    if settings.is_file():
+        with settings.open() as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+
+        logger.debug(f'fetched yaml config {config}')
+
+        # if no notifications list set in the config, we skip
+        try:
+            config['notifications']
+        except KeyError:
+            return
+
+        notify_email(config['notifications'], event, context)
+
 
 
 def dispatch(event, context):
