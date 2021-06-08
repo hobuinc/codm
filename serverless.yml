@@ -88,8 +88,8 @@ functions:
     tags:
         Name: '${self:service}:lambda.${self:provider.stage}.notify'
         slackhook: ${file(./config.json):slackhook}
-        sesregion: ${file(./config.json):region}
-        sesdomain: ${file(./config.json):domain}
+        sesregion: ${file(./config.json):sesregion}
+        sesdomain: ${file(./config.json):sesdomain}
     maximumRetryAttempts: 0
 
 

@@ -265,6 +265,8 @@ def notify(event, context):
     uri = os.path.join('s3://', bucket, collect, 'settings.yaml')
     settings = S3Path.from_uri(uri)
 
+    # if set have a settings file and there is an array
+    # of email addresses in the notifications top-level key, send email
     logger.debug(f'checking prefix for job {settings}')
     if settings.is_file():
         with settings.open() as f:
