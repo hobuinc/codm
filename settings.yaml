@@ -14,5 +14,4 @@ opensfm_processes: 8
 pc_tile: True
 notifications:
   - 'howard@hobu.co'
-  - 'hobu.inc@gmail.com'
 

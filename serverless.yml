@@ -119,7 +119,7 @@ resources:
             - "Ref::bucketname"
             - "Ref::collectname"
             - "Ref::outputname"
-          Memory: 32000
+          Memory: 64000
           Privileged: true
           Vcpus: 16
           ResourceRequirements:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+#set -e
 echo "Hello , this is CODM docker!"
 
 BUCKET="$4"
@@ -14,14 +14,15 @@ cd /code
 mkdir /local/images
 ln -s /local/images /code/images
 
+aws s3 sync s3://$BUCKET/$COLLECT/ /local/images --no-progress
+
 aws s3 cp s3://$BUCKET/settings.yaml .
 
 # try using an overriden settings file
 aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .  || exit 0
-aws s3 sync s3://$BUCKET/$COLLECT/ /local/images --no-progress
 
 #python3 /code/run.py --rerun-all --project-path ..
-python3 /code/run.py --rerun-all --project-path .. 2>&1 > odm_$COLLECT-process.log
+python3 /code/run.py --rerun-all --project-path .. 2>&1 | tee odm_$COLLECT-process.log
 
 ls -al
 
