@@ -21,8 +21,16 @@ aws s3 cp s3://$BUCKET/settings.yaml .
 # try using an overriden settings file
 aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .  || exit 0
 
+# try copying a boundary
+aws s3 cp s3://$BUCKET/$COLLECT/boundary.json .  || exit 0
+
+BOUNDARY="--auto-boundary"
+if test -f "boundary.json"; then
+    BOUNDARY="--boundary boundary.json"
+fi
+
 #python3 /code/run.py --rerun-all --project-path ..
-python3 /code/run.py --rerun-all --project-path .. 2>&1 | tee odm_$COLLECT-process.log
+python3 /code/run.py --rerun-all $BOUNDARY --project-path .. 2>&1 | tee odm_$COLLECT-process.log
 
 ls -al
 
