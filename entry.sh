@@ -19,10 +19,10 @@ aws s3 sync s3://$BUCKET/$COLLECT/ /local/images --no-progress
 aws s3 cp s3://$BUCKET/settings.yaml .
 
 # try using an overriden settings file
-aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .  || exit 0
+aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .  || true
 
 # try copying a boundary
-aws s3 cp s3://$BUCKET/$COLLECT/boundary.json .  || exit 0
+aws s3 cp s3://$BUCKET/$COLLECT/boundary.json .  || true
 
 BOUNDARY="--auto-boundary"
 if test -f "boundary.json"; then

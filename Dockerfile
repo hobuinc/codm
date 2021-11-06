@@ -1,5 +1,6 @@
 FROM opendronemap/odm:gpu  as build
 
+
 RUN pip3 install  awscli
 
 
