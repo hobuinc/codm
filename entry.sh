@@ -35,7 +35,7 @@ python3 /code/run.py --rerun-all $BOUNDARY --project-path .. 2>&1 | tee odm_$COL
 ls -al
 
 # copy ODM products
-PRODUCTS=$(ls -d odm_*)
+PRODUCTS=$(ls -d odm_* 3d_tile*)
 for val in $PRODUCTS;
 do
     aws s3 sync $val s3://$BUCKET/$COLLECT/$OUTPUT/$val --no-progress
