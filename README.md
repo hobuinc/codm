@@ -29,17 +29,14 @@ execution script.
 * Docker
 * Conda (Conda Forge)
 * NodeJS
-* Serverless
+* Terraform
 * AWS CLI
 
 
 ### Install Prerequisites
 
-    conda create -n codm -c conda-forge nodejs
+    conda create -n codm -c conda-forge terraform jq awscli python
     conda activate codm
-    pip install awscli
-    npm install -g serverless
-    npm install -g serverless-python-requirements
 
 ### Environment Variables
 
@@ -58,18 +55,22 @@ variables stick:
 
 ## Deployment
 
-1. print the environment variables for your AWS region. This will gather the subnets and the GPU AMI ID in ``subnets.yaml`` and ``ami.yaml``
+1. Create a file called  ``terraform.tfvars`` and put a couple of variables in it
 
-        ./print-variables.sh
+    ```
+    prefix = "hobutf"
+    stage  = "dev"
+    ```
+
+    This will create a bucket at ``s3://hobutf-dev-codm``
 
 
-2. Execute the Serverless deployment, getting the GPU AMI from the ``./print-variables.sh`` call and use a service name (in our case it is ``codm``)
 
-        sls deploy --service codm --stage dev
 
-3. Push the Docker image with the service name
+2. Execute Terraform environment
 
-        ./deploy-docker.sh codm
+        terraform apply
+
 
 ### Slack notifications
 
@@ -90,18 +91,9 @@ Add a ``notifications`` list to the ``settings.yaml`` that is used by the collec
 
 ## Removal
 
-1. The bucket must be empty before it can be removed. For the service described in Deployment,
-   the bucket name would be ``s3://codm-dev-codm``
+1. Remove the deployment
 
-        aws s3 rm --recursive s3://codm-dev-codm
-
-2. Clean up the ECR repository
-
-        ./cleanup-docker codm
-
-3. Remove the deployment
-
-        sls remove --service codm --stage dev
+        terraform destroy
 
 ## Usage
 

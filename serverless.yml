@@ -1,5 +1,13 @@
 service:  ${opt:service, 'codm'}
 
+package:
+
+ patterns:
+   - '!node_modules/**'
+   - '!brighton_beach/**'
+  # Package each function individually
+ individually: true
+
 provider:
   name: aws
   stage: ${opt:stage, 'dev'}

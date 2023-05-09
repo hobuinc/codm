@@ -3,3 +3,11 @@ subnets.yaml
 ami.yaml
 security-groups.yaml
 slack-url.txt
+lambda-layer.zip
+lambda-functions.zip
+lambda-build.zip
+builds
+config.json
+.terraform
+*.tfstate
+*.hcl

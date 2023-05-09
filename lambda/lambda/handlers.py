@@ -90,8 +90,9 @@ def get_job_info(context):
 
     aws_lambda = boto3.client('lambda')
     tags = aws_lambda.list_tags(Resource = arn)
-    stage = tags['Tags']['STAGE']
+    stage = tags['Tags']['stage']
     stack = tags['Tags']['name']
+
 
     try:
         slack = tags['Tags']['slackhook']
