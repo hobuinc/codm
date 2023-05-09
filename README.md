@@ -35,11 +35,10 @@ execution script.
 
 ### Install Prerequisites
 
-    conda create -n codm -c conda-forge nodejs
+    conda create -n codm -c conda-forge nodejs jq awscli
     conda activate codm
-    pip install awscli
-    npm install -g serverless
-    npm install -g serverless-python-requirements
+    npm install serverless@2.32.0
+    npm install serverless-python-requirements
 
 ### Environment Variables
 

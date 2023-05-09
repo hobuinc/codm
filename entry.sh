@@ -9,12 +9,18 @@ OUTPUT="$6"
 
 echo "processing collect '$COLLECT' from bucket $BUCKET to $OUTPUT"
 
-cd /code
+#cd /code
 
-mkdir /local/images
-ln -s /local/images /code/images
 
-aws s3 sync s3://$BUCKET/$COLLECT/ /local/images --no-progress
+ls -al / && ls -al /local
+mkdir -p /local/processing/code/
+mkdir -p /local/processing/code/images
+mkdir -p /local/processing/code/tmp
+cd /local/processing/code
+
+echo "Echoing that we did an update!"
+
+aws s3 sync s3://$BUCKET/$COLLECT/ /local/processing/code/images --no-progress
 
 aws s3 cp s3://$BUCKET/settings.yaml .
 
@@ -30,7 +36,7 @@ if test -f "boundary.json"; then
 fi
 
 #python3 /code/run.py --rerun-all --project-path ..
-python3 /code/run.py --rerun-all $BOUNDARY --project-path .. 2>&1 | tee odm_$COLLECT-process.log
+python3 /code/run.py --rerun-all $BOUNDARY --project-path /local/processing 2>&1 | tee odm_$COLLECT-process.log
 
 ls -al
 
