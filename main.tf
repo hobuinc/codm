@@ -45,3 +45,18 @@ output "bucket" {
     value = module.resources.bucket
 }
 
+output "docker_image" {
+    description = "CODM docker image"
+    value = module.resources.docker_image
+}
+
+output "prefix" {
+    description = "CODM prefix"
+    value = var.prefix
+}
+
+output "stage" {
+    description = "CODM stage"
+    value = var.stage
+}
+

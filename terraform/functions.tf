@@ -309,7 +309,7 @@ resource "null_resource" "pip_install" {
   }
 
   provisioner "local-exec" {
-    command =  "rm -rf ${path.root}/builds/* && mkdir ${path.root}/builds/python && python3 -m pip install -r requirements.txt -t ${path.root}/builds/python"
+    command =  "rm -rf ${path.root}/builds/* && mkdir -p ${path.root}/builds/python && python3 -m pip install -r requirements.txt -t ${path.root}/builds/python"
   }
 }
 

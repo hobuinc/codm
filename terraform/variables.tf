@@ -51,3 +51,7 @@ output "snsTopic" {
     description = "SNS Topic that subscribes to changes in Batch Job status"
     value = aws_sns_topic.codm-notifications-sns.arn
 }
+output "docker_image" {
+    description = "Active ECR Image"
+    value = "${aws_ecr_repository.repo.repository_url}:${var.docker_tag}"
+}

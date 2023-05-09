@@ -2,28 +2,31 @@
 
 set -e
 
-STACK_NAME="$1"
-if [ -z "$STACK_NAME" ]
+PREFIX=$(cat terraform.tfstate | jq '.outputs.prefix.value // empty' -r)
+STAGE=$(cat terraform.tfstate | jq '.outputs.stage.value // empty' -r)
+
+
+if [ -z "$PREFIX" ]
 then
-      echo "STACK_NAME is empty, you must set one to use this script"
+      echo "PREFIX is empty, unable to fetch from terraform.tfstate"
       exit 1;
 fi
 
-echo "Stack name: $STACK_NAME"
+if [ -z "$STAGE" ]
+then
+      echo "STAGE is empty, unable to fetch from terraform.tfstate"
+      exit 1;
+fi
+
+
 export AWS_IDENTITY=$(aws sts get-caller-identity --query 'Account' --output text)
 echo "AWS Identity: $AWS_IDENTITY"
 
 
-STAGE="$2"
-if [ -z "$STAGE" ]
-then
-      echo "STAGE is empty. Is the Cloud Formation Stack created?"
-      exit 1;
-fi
 
 aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login -u AWS --password-stdin "https://$AWS_IDENTITY.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 
-CONTAINER_NAME="$STACK_NAME-$STAGE-codm"
+CONTAINER_NAME="$PREFIX-$STAGE-codm"
 echo "Container name: $CONTAINER_NAME"
 
 ECR_REPONAME=$(aws ecr describe-repositories |jq -r '.repositories[] | select (.repositoryName == "'$CONTAINER_NAME'").repositoryName')

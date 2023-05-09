@@ -1,7 +1,13 @@
 #!/bin/bash
 
 
-BUCKET=$(cat terraform.tfstate | jq .outputs.bucket.value -r)
+BUCKET=$(cat terraform.tfstate | jq '.outputs.bucket.value // empty' -r)
+
+if [ -z "$BUCKET" ]
+then
+      echo "BUCKET value is empty, unable to fetch from terraform.tfstate"
+      exit 1;
+fi
 
 DIR="drone_dataset_brighton_beach-master"
 if [ -d "$DIR" ]

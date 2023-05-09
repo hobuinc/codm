@@ -8,6 +8,7 @@ locals {
 
 resource aws_ecr_repository repo {
     name = local.ecr_repository_name
+    force_delete = true
 }
 
 resource null_resource ecr_image {
