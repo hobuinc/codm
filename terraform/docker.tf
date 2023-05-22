@@ -14,6 +14,7 @@ resource aws_ecr_repository repo {
 resource null_resource ecr_image {
  triggers = {
    docker_file = md5(file("${path.root}/Dockerfile"))
+   entry_file = md5(file("${path.root}/entry.sh"))
  }
 
 provisioner "local-exec" {

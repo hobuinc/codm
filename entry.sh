@@ -18,41 +18,33 @@ mkdir -p /local/processing/code/images
 mkdir -p /local/processing/code/tmp
 cd /local/processing/code
 
-echo "Echoing that we did an update!"
-
 aws s3 sync s3://$BUCKET/$COLLECT/ /local/processing/code/images --no-progress
 
-aws s3 cp s3://$BUCKET/settings.yaml .
-
 # try using an overriden settings file
-aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml .  || true
+aws s3 cp s3://$BUCKET/$COLLECT/settings.yaml /code/settings.yaml  || true
 
 # try copying a boundary
-aws s3 cp s3://$BUCKET/$COLLECT/boundary.json .  || true
+aws s3 cp s3://$BUCKET/$COLLECT/boundary.json /local/processing/code/boundary.json  || true
+
+cat /local/processing/code/settings.yaml
 
 BOUNDARY="--auto-boundary"
 if test -f "boundary.json"; then
     BOUNDARY="--boundary boundary.json"
 fi
 
-#python3 /code/run.py --rerun-all --project-path ..
-python3 /code/run.py --rerun-all $BOUNDARY --project-path /local/processing 2>&1 | tee odm_$COLLECT-process.log
+python3 /code/run.py --rerun-all $BOUNDARY --project-path /local/processing --copy-to /local/processing/output 2>&1 | tee odm_$COLLECT-process.log
+echo "response code: " ${PIPESTATUS[0]}
+RESPOSE_CODE=${PIPESTATUS[0]}
 
 ls -al
 
-# copy ODM products
-PRODUCTS=$(ls -d odm_* 3d_tile*)
-for val in $PRODUCTS;
-do
-    aws s3 sync $val s3://$BUCKET/$COLLECT/$OUTPUT/$val --no-progress
-done
+aws s3 sync /local/processing/output s3://$BUCKET/$COLLECT/$OUTPUT/$val --no-progress
 
 # copy the log
 aws s3 cp odm_$COLLECT-process.log s3://$BUCKET/$COLLECT/$OUTPUT/odm_$COLLECT-process.log
 
-# try to copy the EPT data (it isn't named odm_*)
-aws s3 sync entwine_pointcloud s3://$BUCKET/$COLLECT/$OUTPUT/entwine_pointcloud --no-progress  || exit 0
-
+exit $RESPONSE_CODE
 
 
 
