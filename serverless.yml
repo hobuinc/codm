@@ -12,7 +12,7 @@ provider:
   name: aws
   stage: ${opt:stage, 'dev'}
   stackName: '${self:service}'
-  runtime: 'python3.8'
+  runtime: 'python3.11'
   region: ${opt:region, 'us-west-2'}
   tags:
     name: '${self:service}'
@@ -70,7 +70,7 @@ functions:
     description:
       'Dispatches CODM jobs when process file is copied to prefix'
     runtime:
-      'python3.8'
+      'python3.11'
     tags:
         Name: '${self:service}:lambda.${self:provider.stage}.dispatch'
     maximumRetryAttempts: 0
@@ -81,7 +81,7 @@ functions:
     description:
       'Cancel CODM jobs when cancel file is copied to prefix'
     runtime:
-      'python3.8'
+      'python3.11'
     tags:
         Name: '${self:service}:lambda.${self:provider.stage}.cancel'
     maximumRetryAttempts: 0
@@ -92,7 +92,7 @@ functions:
     description:
       'Respond to notifications '
     runtime:
-      'python3.8'
+      'python3.11'
     tags:
         Name: '${self:service}:lambda.${self:provider.stage}.notify'
         slackhook: ${file(./config.json):slackhook}
