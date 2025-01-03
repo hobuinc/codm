@@ -39,7 +39,7 @@ resource "aws_internet_gateway" "gateway" {
 }
 
 resource "aws_security_group" "worker-security-group" {
-    name        = "WorkerSecurityGroup"
+    name        = "${var.prefix}_${var.stage}_WorkerSecurityGroup"
     description = "Security group for coord worker instances"
    ingress {
      protocol    = "tcp"

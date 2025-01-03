@@ -1,3 +1,16 @@
+resource "aws_s3_bucket_intelligent_tiering_configuration" "storage-bucket-tiering" {
+  bucket = aws_s3_bucket.storage.id
+  name = "${var.prefix}-${var.stage}-codm-storage-tiering"
+
+  tiering {
+    access_tier = "DEEP_ARCHIVE_ACCESS"
+    days        = 180
+  }
+  tiering {
+    access_tier = "ARCHIVE_ACCESS"
+    days        = 125
+  }
+}
 resource "aws_s3_bucket" "storage" {
     bucket = "${var.prefix}-${var.stage}-codm"
 
@@ -11,6 +24,20 @@ resource "aws_s3_bucket" "storage" {
     }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "storage-bucket-lifecycle" {
+  bucket = aws_s3_bucket.storage.id
+
+  rule {
+    id = "Transition to Glacier after 30 days"
+
+    status = "Enabled"
+
+    transition {
+      days          = 30
+      storage_class = "GLACIER_IR"
+    }
+  }
+}
 
 data "aws_iam_policy_document" "topic" {
   statement {
@@ -22,7 +49,7 @@ data "aws_iam_policy_document" "topic" {
     }
 
     actions   = ["SNS:Publish"]
-    resources = ["arn:aws:sns:*:*:s3-event-notification-topic"]
+    resources = ["arn:aws:sns:*:*:${var.prefix}_${var.stage}-s3-event-notification-topic"]
 
     condition {
       test     = "ArnLike"
@@ -33,7 +60,7 @@ data "aws_iam_policy_document" "topic" {
 }
 
 resource "aws_sns_topic" "topic" {
-  name   = "s3-event-notification-topic"
+  name   = "${var.prefix}_${var.stage}-s3-event-notification-topic"
   policy = data.aws_iam_policy_document.topic.json
 }
 

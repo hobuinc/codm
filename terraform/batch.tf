@@ -26,13 +26,13 @@ resource "aws_batch_compute_environment" "batch-compute-environment" {
     type                        = "MANAGED"
     # add compute_resources
     compute_resources {
-        instance_type = [ "g4dn.4xlarge", "g4dn.8xlarge" ]
+        instance_type = [ "g6.4xlarge", "g6.8xlarge" ]
         subnets = [ for s in aws_subnet.worker-subnets: s.id ]
         type = "SPOT"
         max_vcpus = 128
         min_vcpus = 0
         ec2_configuration  {
-             image_type =  "ECS_AL2_NVIDIA"
+             image_type =  "ECS_AL2023"
         }
 
         launch_template {

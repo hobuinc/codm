@@ -34,7 +34,7 @@ echo "did we find ECR_REPONAME: $ECR_REPONAME"
 
 
 
-docker build --platform linux/amd64 -t $AWS_IDENTITY.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${CONTAINER_NAME}:latest .
+docker build --platform linux/amd64 --no-cache -t $AWS_IDENTITY.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${CONTAINER_NAME}:latest .
 docker push $AWS_IDENTITY.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/${CONTAINER_NAME}:latest
 
 IMG_SHA=$(aws ecr describe-images --repository-name $CONTAINER_NAME --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageDigest' --output json |jq -r)

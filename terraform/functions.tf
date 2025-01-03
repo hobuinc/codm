@@ -91,14 +91,13 @@ resource "aws_lambda_function" "notify_lambda_function" {
   function_name = "${var.prefix}-${var.stage}-notify"
   role          = aws_iam_role.iam_role_for_lambda.arn
   handler       = "lambda.handlers.notify"
-  runtime       = "python3.9"
+  runtime       = "python3.10"
   source_code_hash = data.archive_file.python_lambda_package.output_base64sha256
 
   description = "Respond to CODM notifications"
   tags = {
     name = var.prefix
     Name = "${var.prefix}:lambda.${var.stage}.process"
-    slackhook = jsondecode(file("${path.root}/config.json")).slackhook
     sesregion = jsondecode(file("${path.root}/config.json")).sesregion
     sesdomain = jsondecode(file("${path.root}/config.json")).sesdomain
     stage = var.stage
@@ -189,7 +188,7 @@ data "aws_iam_policy_document" "lambda_logging_document" {
 
 
 resource "aws_iam_policy" "lambda_logging_policy" {
-  name        = "lambda_logging"
+  name        = "${var.prefix}_${var.stage}.lambda_logging"
   path        = "/"
   description = "IAM policy for logging from a lambda"
   policy      = data.aws_iam_policy_document.lambda_logging_document.json
@@ -219,7 +218,7 @@ resource "aws_lambda_function" "dispatch_lambda_function" {
   function_name = "${var.prefix}-${var.stage}-dispatch"
   role          = aws_iam_role.iam_role_for_lambda.arn
   handler       = "lambda.handlers.dispatch"
-  runtime       = "python3.9"
+  runtime       = "python3.10"
   source_code_hash = data.archive_file.python_lambda_package.output_base64sha256
 
   description = "Dispatch CODM jobs when 'process' file is copied to s3:// prefix"
@@ -257,7 +256,7 @@ resource "aws_lambda_function" "cancel_lambda_function" {
   function_name = "${var.prefix}-${var.stage}-cancel"
   role          = aws_iam_role.iam_role_for_lambda.arn
   handler       = "lambda.handlers.cancel"
-  runtime       = "python3.9"
+  runtime       = "python3.10"
   source_code_hash = data.archive_file.python_lambda_package.output_base64sha256
 
   description = "Cancel CODM jobs when 'cancel' file is copied to s3:// prefix"
@@ -342,5 +341,5 @@ resource "aws_lambda_layer_version" "lambda_layer" {
   layer_name          = "${var.prefix}-${var.stage}-lambda-layer"
   filename            = data.archive_file.lambda_layer_zip.output_path
   source_code_hash    = data.archive_file.lambda_layer_zip.output_base64sha256
-  compatible_runtimes = ["python3.9"]
+  compatible_runtimes = ["python3.10"]
 }

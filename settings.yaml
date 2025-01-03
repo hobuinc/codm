@@ -1,17 +1,20 @@
-pc_las: True
 dsm: True
 dtm: True
-pc_ept: True
+cog: True
+pc_ept: False
+pc_copc: True
 max_concurrency: 16
 verbose: True
 time: True
-dem-resolution: 0.25
+dem-resolution: 0.5
 feature_type: hahog
 feature_quality: high
 matcher_neighbors: 14
 min_num_features: 16000
 opensfm_processes: 8
 pc_tile: True
+3d_tiles: True
+gltf: True
 notifications:
   - 'howard@hobu.co'
 

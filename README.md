@@ -1,6 +1,6 @@
 # CODM – Cloud OpenDroneMap
 
-CODM is a [Serverless framework](https://www.serverless.com/) configuration for
+CODM is a [Terraform](https://www.terraform.io/) configuration for
 running OpenDroneMap on AWS.
 
 

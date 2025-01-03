@@ -217,7 +217,7 @@ resource "aws_iam_role_policy_attachment" "service-attach-1" {
 ####################
 
 resource "aws_iam_role" "batch-job-role" {
-  name = "${var.prefix}-BatchJobRole"
+  name = "${var.prefix}-${var.stage}-BatchJobRole"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -235,7 +235,7 @@ resource "aws_iam_role" "batch-job-role" {
 
 
 resource "aws_iam_policy" "sqs-full-access" {
-  name = "${var.prefix}-SqsFullAccess"
+  name = "${var.prefix}-${var.stage}-SqsFullAccess"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -256,7 +256,7 @@ resource "aws_iam_role_policy_attachment" "sqs-job-attach" {
 
 
 resource "aws_iam_policy" "ecs-full-access" {
-  name = "${var.prefix}-EcsFullAccess"
+  name = "${var.prefix}-${var.stage}-EcsFullAccess"
 
   policy = jsonencode({
     "Version": "2012-10-17",
@@ -506,7 +506,7 @@ resource "aws_iam_role_policy_attachment" "ecs-full-job-attach" {
 
 
 resource "aws_iam_policy" "ecs-task-execution" {
-  name = "${var.prefix}-EcsTaskExecutionPolicy"
+  name = "${var.prefix}-${var.stage}-EcsTaskExecutionPolicy"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -909,12 +909,12 @@ resource "aws_iam_role_policy" "ssm-readonly" {
 }
 
 resource "aws_iam_instance_profile" "batch-instance-profile" {
-  name = "${var.prefix}-BatchInstanceProfile"
+  name = "${var.prefix}-${var.stage}-BatchInstanceProfile"
   role = aws_iam_role.batch-instance-profile-role.name
 }
 
 resource "aws_iam_role" "batch-instance-profile-role" {
-  name = "${var.prefix}-BatchInstanceProfileRole"
+  name = "${var.prefix}-${var.stage}-BatchInstanceProfileRole"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
